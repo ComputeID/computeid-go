@@ -1,0 +1,65 @@
+name: release
+
+# Runs when you push a SemVer tag (e.g. v0.1.0). Verifies the tagged commit
+# passes the full test suite, then drafts a GitHub Release with auto-generated
+# notes. Module is automatically available via `go get @<tag>` once the tag is
+# on the default branch's history — no separate registry to publish to.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: write  # for creating the GitHub Release
+
+jobs:
+  verify-and-release:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: computeid
+          POSTGRES_PASSWORD: computeid
+          POSTGRES_DB: computeid_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U computeid"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      COMPUTEID_TEST_DATABASE_URL: postgres://computeid:computeid@localhost:5432/computeid_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for release notes
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          check-latest: true
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: build
+        run: go build ./...
+
+      - name: test (full suite, including Postgres integration)
+        run: go test -race -count=1 -p 1 ./...
+
+      - name: create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            See [CHANGELOG.md](CHANGELOG.md) for full notes.
+
+            Install:
+            ```bash
+            go get github.com/ComputeID/computeid-go@${{ github.ref_name }}
+            ```

@@ -1,0 +1,12 @@
+.git
+.gitignore
+*.test
+*.out
+coverage.txt
+.DS_Store
+/dist/
+/bin/
+README.md
+LICENSE
+docs/
+examples/

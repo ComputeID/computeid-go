@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS agent_actions;
+DROP TABLE IF EXISTS agents;
+DROP TABLE IF EXISTS devices;
+DROP TABLE IF EXISTS device_counters;
+DROP TABLE IF EXISTS signing_keys;

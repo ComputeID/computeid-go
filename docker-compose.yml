@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: computeid
+      POSTGRES_PASSWORD: computeid
+      POSTGRES_DB: computeid
+    ports:
+      - "5440:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U computeid"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build: .
+    environment:
+      DATABASE_URL: postgres://computeid:computeid@db:5432/computeid?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      PORT: "8088"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8088:8088"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
